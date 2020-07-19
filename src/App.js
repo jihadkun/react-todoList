@@ -39,6 +39,7 @@ class App extends React.Component {
 
       this.setState({
         todoList: oldTodoList,
+        inputText: "",
       });
 
       // untuk tes output array di console
@@ -72,7 +73,7 @@ class App extends React.Component {
         return element.isFinished;
       } else if (activeFilter === "ACTIVE") {
         return !element.isFinished;
-      } else if (activeFilter === "ALL") {
+      } else {
         return true;
       }
     });
@@ -88,7 +89,10 @@ class App extends React.Component {
           listToRender={filteredTodoList}
           onToggleItem={this.handleToggleDone}
         />
-        <FilterTodo onChangeFilter={this.changeFilterType} />
+        <FilterTodo
+          onChangeFilter={this.changeFilterType}
+          currentFilter={this.state.activeFilter}
+        />
       </div>
     );
   }
