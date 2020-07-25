@@ -2,6 +2,12 @@ import React from "react";
 import Input from "./components/input/input";
 import ListTodo from "./components/ListTodo/ListTodo";
 import FilterTodo from "./components/FilterTodo/FilterTodo";
+import {
+  ambilDataDariServer,
+  tambahDataKeServer,
+  updateDataDiServer,
+  deleteDataDiServer,
+} from "./services/TodoService";
 
 class App extends React.Component {
   constructor(props) {
@@ -12,6 +18,24 @@ class App extends React.Component {
       todoList: [],
       activeFilter: "ALL",
     };
+  }
+
+  //parsing data lalu ambil data dari server
+  componentDidMount() {
+    ambilDataDariServer().then((response) => {
+      const data = response.data;
+      const parsedData = data.map((element) => {
+        return {
+          id: element.id,
+          isFinished: element.isDone,
+          todoText: element.text,
+        };
+      });
+
+      this.setState({
+        todoList: parsedData,
+      });
+    });
   }
 
   // menangkap input ketikan keyboard user
@@ -32,11 +56,17 @@ class App extends React.Component {
     if (event.keyCode === 13) {
       const oldTodoList = this.state.todoList;
       const inputText = this.state.inputText;
+      // tambah data ke server, parsing data dari lokal ke server lalu POST
+      tambahDataKeServer({
+        isDone: false,
+        text: inputText,
+      });
+
       oldTodoList.push({
         isFinished: false,
         todoText: inputText,
       });
-
+      // ini tambah data ke lokal
       this.setState({
         todoList: oldTodoList,
         inputText: "",
@@ -50,7 +80,16 @@ class App extends React.Component {
   // handle klik button, negasi untuk toggle perubahan state saat diklik
   handleToggleDone = (index) => {
     const currentTodoList = this.state.todoList;
-    currentTodoList[index].isFinished = !currentTodoList[index].isFinished;
+    const todoItem = currentTodoList[index];
+
+    // ubah value / update data di Server
+    const { id, isFinished, todoText } = todoItem;
+    updateDataDiServer(id, {
+      isDone: !isFinished,
+      text: todoText,
+    });
+
+    currentTodoList[index].isFinished = !isFinished;
 
     this.setState({
       todoList: currentTodoList,
@@ -62,6 +101,26 @@ class App extends React.Component {
     this.setState({
       activeFilter: filterType,
     });
+  };
+
+  handleDeleteTodo = (element) => {
+    const { id } = element;
+    deleteDataDiServer(id)
+      .then(() => ambilDataDariServer())
+      .then((response) => {
+        const data = response.data;
+        const parsedData = data.map((element) => {
+          return {
+            id: element.id,
+            isFinished: element.isDone,
+            todoText: element.text,
+          };
+        });
+
+        this.setState({
+          todoList: parsedData,
+        });
+      });
   };
 
   render() {
@@ -86,6 +145,7 @@ class App extends React.Component {
           onKeyPressed={this.handleKeyPressed}
         />
         <ListTodo
+          onTodoDelete={this.handleDeleteTodo}
           listToRender={filteredTodoList}
           onToggleItem={this.handleToggleDone}
         />
